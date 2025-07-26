@@ -7,4 +7,6 @@ langchain_community
 langchain-openai
 faiss-cpu
 pypdf
+structlog
+PyMuPDF
 -e .

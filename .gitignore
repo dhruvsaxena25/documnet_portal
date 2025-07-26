@@ -28,7 +28,8 @@ MANIFEST
 .venv
 venv
 .env
-env 
+env
+__pycache__/ 
 documnet_portal.egg-info
 test.py 
 # PyInstaller
