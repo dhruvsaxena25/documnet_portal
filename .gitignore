@@ -29,6 +29,7 @@ MANIFEST
 venv
 .env
 env
+*.pyc
 __pycache__/ 
 documnet_portal.egg-info
 test.py 
