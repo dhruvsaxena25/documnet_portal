@@ -27,6 +27,6 @@ if __name__ == "__main__":
         a = 1/0
         print(a)
     except Exception as e:
-        app_exc = DocumnetPortalException(e, sys)
+        app_exc = DocumentPortalException(e, sys)
         logger.error(app_exc)
         raise app_exc
