@@ -4,7 +4,7 @@ import sys
 
 
 logger=CustomLogger().get_logger(__file__)
-class DocumnetPortalException(Exception):
+class DocumentPortalException(Exception):
     """Custom exception for Document Portal"""
     def __init__(self, error_message: str, error_details: sys):
         _, _, exc_tb = error_details.exc_info()
