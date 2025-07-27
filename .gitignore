@@ -33,7 +33,8 @@ env
 __pycache__/ 
 documnet_portal.egg-info
 test.py
-.comment_codes.txt 
+comment_codes.txt 
+..comment_codes.txt
 .*txt 
 # PyInstaller
 #  Usually these files are written by a python script from a template

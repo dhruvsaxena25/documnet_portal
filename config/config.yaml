@@ -1,0 +1,9 @@
+faiss_db:
+  collection_name: "document_portal"
+
+
+embedding_model:
+  provider: "openai"
+  model: ""
+
+
