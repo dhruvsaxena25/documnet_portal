@@ -1,5 +1,7 @@
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
 
 from exception.custom_exception import DocumentPortalException
@@ -87,17 +89,31 @@ class ModelLoader:
             )
             return llm
             
-        # elif provider == "openai":
-        #     return ChatOpenAI(
-        #         model=model_name,
-        #         api_key=self.api_keys["OPENAI_API_KEY"],
-        #         temperature=temperature,
-        #         max_tokens=max_tokens
-        #     )
+        elif provider == "openai":
+            return ChatOpenAI(
+                model=model_name,
+                api_key=self.api_keys["OPENAI_API_KEY"],
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
         else:
             log.error("Unsupported LLM provider", provider=provider)
             raise ValueError(f"Unsupported LLM provider: {provider}")
         
-
+if __name__ == "__main__":
+    loader = ModelLoader()
+    
+    # Test embedding model loading
+    embeddings = loader.load_embeddings()
+    print(f"Embedding Model Loaded: {embeddings}")
+    
+    # Test LLM loading based on YAML config
+    llm = loader.load_llm()
+    print(f"LLM Loaded: {llm}")
+    
+    # Test the ModelLoader
+    result=llm.invoke("Hello, how are you?")
+    print(f"LLM Result: {result.content}")
+    
     
     
