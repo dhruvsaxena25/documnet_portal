@@ -14,16 +14,19 @@ import os
 
 
 class DocumentComparatorLLM:
-    
     def __init__(self):
         pass
     
-    
     def compare_documents(self):
+        """
+        Compares two documents and returns a structured comparison.
+        """
         pass
     
-    
     def _format_response(self):
+        """
+        Formats the response from the LLM into a structured format.
+        """
         pass
     
     
