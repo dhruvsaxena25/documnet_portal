@@ -10,4 +10,5 @@ pypdf
 structlog
 PyMuPDF
 pandas 
+
 -e .
