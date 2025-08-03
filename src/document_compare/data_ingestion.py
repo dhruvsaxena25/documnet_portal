@@ -41,11 +41,11 @@ class DocumentIngestion:
         Saves uploaded files to a specific directory.
         """
         try:
-            self.delete_existing_files()
-            self.log.info("Exisiting files deleted successfully")
+            # self.log.info("Exisiting files deleted successfully")
             
             ref_path = self.session_path / reference_file.name
             act_path = self.session_path / actual_file.name
+            
             if not reference_file.name.endswith(".pdf") or not actual_file.name.endswith(".pdf"):
                 raise ValueError("Only PDF files are allowed")
             
@@ -82,24 +82,23 @@ class DocumentIngestion:
             self.log.error(f"Error in Reading PDF File: {e}")
             raise DocumentPortalException("An error occured while reading the pdf file.", sys)
     def combine_documents(self)->str:
+        """
+        Combine content of all PDFs in session folder into a single string.
+        """
         try:
-            content_dict = {}
             doc_parts = []
-
-            for filename in sorted(self.base_dir.iterdir()):
-                if filename.is_file() and filename.suffix == ".pdf":
-                    content_dict[filename.name] = self.read_pdf(filename)
-
-            for filename, content in content_dict.items():
-                doc_parts.append(f"Document: {filename}\n{content}")
+            for file in sorted(self.session_path.iterdir()):
+                if file.is_file() and file.suffix.lower() == ".pdf":
+                    content = self.read_pdf(file)
+                    doc_parts.append(f"Document: {file.name}\n{content}")
 
             combined_text = "\n\n".join(doc_parts)
-            self.log.info("Documents combined", count=len(doc_parts))
+            self.log.info("Documents combined", count=len(doc_parts), session=self.session_id)
             return combined_text
 
         except Exception as e:
-            self.log.error(f"Error combining documents: {e}")
-            raise DocumentPortalException("An error occurred while combining documents.", sys)
+            self.log.error("Error combining documents", error=str(e), session=self.session_id)
+            raise DocumentPortalException("Error combining documents", sys)
 
     def clean_old_sessions(self, keep_latest: int = 3):
         """
