@@ -28,5 +28,9 @@ if __name__ == "__main__":
         print(a)
     except Exception as e:
         app_exc = DocumentPortalException(e, sys)
-        logger.error(app_exc)
+        # logger.error(app_exc)
         raise app_exc
+    # try:
+    #     a = int("abc")  # ValueError (inbuilt)
+    # except ValueError as e:
+    #     raise DocumentPortalException("Failed while processing document", e)
