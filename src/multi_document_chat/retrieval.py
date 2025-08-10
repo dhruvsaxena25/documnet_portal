@@ -15,7 +15,7 @@ from model.models import PromptType
 
 
 class ConversationalRAG:
-    def __init__(self, session_id: str, retriever = None):
+    def __init__(self, session_id: str, retriever=None):
         try:
             self.log =  CustomLogger().get_logger(__name__)
             self.session_id = session_id
@@ -48,7 +48,6 @@ class ConversationalRAG:
             )
             self.retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
             self.log.info("FAISS retriever loaded successfully", index_path=index_path, session_id=self.session_id)
-            # self._build_lcel_chain()
             return self.retriever
         
         except Exception as e:

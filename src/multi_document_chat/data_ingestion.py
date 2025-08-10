@@ -10,7 +10,7 @@ from exception.custom_exception import DocumentPortalException
 from utils.model_loader import ModelLoader
 
 
-class DocumnetIngestor:
+class DocumentIngestor:
     SUPPORTED_FILE_TYPES = {'.pdf', '.doc', '.docx', '.txt', '.md'}
     def __init__(self, temp_dir:str = "data/multi_doc_chat",faiss_dir: str = "faiss_index", session_id: str | None = None):
         try:
@@ -83,7 +83,21 @@ class DocumnetIngestor:
     def _create_retriever(self, documents):
         try:
             splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=300)
-            chunks= splitter.split_documents()
+            chunks= splitter.split_documents(documents)
+            self.log.info("Documents split into chunks", total_chunks=len(chunks), session_id=self.session_id)
+            
+            embeddings = self.model_loader.load_embeddings()
+            vectorstore = FAISS.from_documents(documents=chunks, embedding=embeddings)
+            
+            # Save FAISS index under session folder
+            vectorstore.save_local(str(self.session_faiss_dir))
+            self.log.info("FAISS index saved to disk", path=str(self.session_faiss_dir), session_id=self.session_id)
+            
+            retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+            
+            self.log.info("FAISS retriever created and ready to use", session_id=self.session_id)
+            return retriever
+
         except Exception as e:
             self.log.error("Failed to create retriever", error=str(e))
             raise DocumentPortalException("Retrieval error in DocumentIngestor", sys)
