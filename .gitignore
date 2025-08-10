@@ -62,7 +62,9 @@ coverage.xml
 .pytest_cache/
 cover/
 faiss_index
-
+archive/
+.archive
+archive
 # Translations
 *.mo
 *.pot
