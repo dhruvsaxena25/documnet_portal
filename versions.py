@@ -18,9 +18,6 @@ packages = [
     "python-multipart",
     "docx2txt"
 ]
-
-
-
 for pkg in packages:
     try:
         version = importlib.metadata.version(pkg)
