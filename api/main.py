@@ -45,24 +45,7 @@ async def serve_ui(request: Request):
 def health() -> Dict[str, str]:
     return {"status": "ok", "service": "document-portal"}
 
-class FastAPIFileAdapter:
-    """Adapt FastAPI UploadFile -> .name + .getbuffer() API"""
-    def __init__(self, uf: UploadFile):
-        self._uf = uf
-        self.name = uf.filename
-    def getbuffer(self) -> bytes:
-        self._uf.file.seek(0)
-        return self._uf.file.read()
-
-def _read_pdf_via_handler(handler: DocHandler, path:str) -> str:
-    """
-    Helper function to read PDF using DocHandler.
-    """
-    try:
-        pass
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading PDF: {str(e)}")
-    
+# ---------- ANALYZE ----------    
 @app.post("/analyze")
 async def analyze_document(file: UploadFile = File(...)) -> Any:
     try:
@@ -76,7 +59,8 @@ async def analyze_document(file: UploadFile = File(...)) -> Any:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {e}")
-    
+
+# ---------- COMPARE ----------    
 @app.post("/compare")
 async def compare_documents(reference: UploadFile = File(...), actual: UploadFile = File(...)) -> Any:
     try:
@@ -92,6 +76,7 @@ async def compare_documents(reference: UploadFile = File(...), actual: UploadFil
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Comparison failed: {e}")
 
+# ---------- CHAT: INDEX ----------
 @app.post("/chat/index")
 async def chat_build_index(
     files: List[UploadFile] = File(...),
@@ -115,7 +100,8 @@ async def chat_build_index(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Indexing failed: {e}")
-    
+
+# ---------- CHAT: QUERY ----------      
 @app.post("/chat/query")
 async def chat_query(
     question: str = Form(...),
@@ -152,5 +138,29 @@ async def chat_query(
         raise HTTPException(status_code=500, detail=f"Query failed: {e}")
 
 
+
+# ---------- Helpers ----------
+class FastAPIFileAdapter:
+    """Adapt FastAPI UploadFile -> .name + .getbuffer() API"""
+    def __init__(self, uf: UploadFile):
+        self._uf = uf
+        self.name = uf.filename
+    def getbuffer(self) -> bytes:
+        self._uf.file.seek(0)
+        return self._uf.file.read()
+
+def _read_pdf_via_handler(handler: DocHandler, path:str) -> str:
+    """
+    Helper function to read PDF using DocHandler.
+    """
+    try:
+        if hasattr(handler, "read_pdf"):
+            return handler.read_pdf(path)  # type: ignore
+        if hasattr(handler, "read_"):
+            return handler.read_(path)  # type: ignore
+        raise RuntimeError("DocHandler has neither read_pdf nor read_ method.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading PDF: {str(e)}")
+    
 # command for executing the fast api
 # uvicorn api.main:app --reload  
