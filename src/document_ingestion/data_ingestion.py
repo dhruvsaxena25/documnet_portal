@@ -18,7 +18,7 @@ from exception.custom_exception import DocumentPortalException
 from utils.model_loader import ModelLoader
 
 from utils.file_io import _session_id, save_uploaded_files
-# from utils.document_ops import load_documents, concat_for_analysis, concat_for_comparison
+from utils.document_ops import load_documents, concat_for_analysis, concat_for_comparison
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}
 class FaissManager:
@@ -92,17 +92,66 @@ class ChatIngestor:
         try: 
             self.log = CustomLogger().get_logger(__name__)
             self.model_loader = ModelLoader()
+            self.use_session = use_session_dirs
+            self.session_id = session_id or _session_id()
             
+            self.temp_base = Path(temp_base); self.temp_base.mkdir(parents=True, exist_ok=True)
+            self.faiss_base = Path(faiss_base); self.faiss_base.mkdir(parents=True, exist_ok=True)
             
+            self.temp_dir = self._resolve_dir(self.temp_base)
+            self.faiss_dir = self._resolve_dir(self.faiss_base)
+            
+            self.log.info("ChatIngestor initialized",
+                          session_id=self.session_id,
+                          temp_dir=str(self.temp_dir),
+                          faiss_dir=str(self.faiss_dir),
+                          sessionized=self.use_session)
         except Exception as e:
             self.log.error("Failed to initialize ChatIngestor", error=str(e))
             raise DocumentPortalException("Initialization error in ChatIngestor", e) from e
-    def _resolve_dir(self):
-        pass
-    def _split(self):
-        pass
-    def built_retriver(self):
-        pass
+        
+    def _resolve_dir(self, base: Path):
+        if self.use_session:
+            d = base / self.session_id
+            d.mkdir(parents=True, exist_ok=True)
+            return d
+        return base
+    def _split(self, docs: List[Document], chunk_size=1000, chunk_overlap=200) -> List[Document]:
+        splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+        chunks = splitter.split_documents(docs)
+        self.log.info("Documents split", chunks=len(chunks), chunk_size=chunk_size, overlap=chunk_overlap)
+        return chunks
+    def built_retriver(self,
+        uploaded_files: Iterable,
+        *,
+        chunk_size: int = 1000,
+        chunk_overlap: int = 200,
+        k: int = 5,):
+        try:
+            paths = save_uploaded_files(uploaded_files, self.temp_dir)
+            docs = load_documents(paths)
+            if not docs:
+                raise ValueError("No valid documents loaded")
+            
+            chunks = self._split(docs, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+            fm = FaissManager(self.faiss_dir, self.model_loader)
+            
+            texts = [c.page_content for c in chunks]
+            metas = [c.metadata for c in chunks]
+            
+            try:
+                vs = fm.load_or_create(texts=texts, metadatas=metas)
+            except Exception:
+                vs = fm.load_or_create(texts=texts, metadatas=metas)
+                
+            added = fm.add_documents(chunks)
+            self.log.info("FAISS index updated", added=added, index=str(self.faiss_dir))
+            
+            return vs.as_retriever(search_type="similarity", search_kwargs={"k": k})
+            
+        except Exception as e:
+            self.log.error("Failed to build retriever", error=str(e))
+            raise DocumentPortalException("Failed to build retriever", e) from e
     
             
 class DocHandler:
@@ -158,12 +207,60 @@ class DocumentComaprator:
         self.session_path = self.base_dir / self.session_id
         self.session_path.mkdir(parents=True, exist_ok=True)
         self.log.info("DocumentComparator initialized", session_path=str(self.session_path))
-    def save_uploaded_files(self):
-        pass
-    def read_pdf(self):
-        pass
-    def combine_documents(self):
-        pass
-    def clean_old_sessions(self):
-        pass
+    def save_uploaded_files(self,  reference_file, actual_file):
+        try:
+            ref_path = self.session_path / reference_file.name
+            act_path = self.session_path / actual_file.name
+            for fobj, out in ((reference_file, ref_path), (actual_file, act_path)):
+                if not fobj.name.lower().endswith(".pdf"):
+                    raise ValueError("Only PDF files are allowed.")
+                with open(out, "wb") as f:
+                    if hasattr(fobj, "read"):
+                        f.write(fobj.read())
+                    else:
+                        f.write(fobj.getbuffer())
+            self.log.info("Files saved", reference=str(ref_path), actual=str(act_path), session=self.session_id)
+            return ref_path, act_path
+        except Exception as e:
+            self.log.error("Error saving PDF files", error=str(e), session=self.session_id)
+            raise DocumentPortalException("Error saving files", e) from e
+    def read_pdf(self, pdf_path: Path)-> str:
+        try:
+            with fitz.open(pdf_path) as doc:
+                if doc.is_encrypted:
+                    raise ValueError(f"PDF is encrypted: {pdf_path.name}")
+                parts = []
+                for page_num in range(doc.page_count):
+                    page = doc.load_page(page_num)
+                    text = page.get_text()  # type: ignore
+                    if text.strip():
+                        parts.append(f"\n --- Page {page_num + 1} --- \n{text}")
+            self.log.info("PDF read successfully", file=str(pdf_path), pages=len(parts))
+            return "\n".join(parts)
+        except Exception as e:
+            self.log.error("Error reading PDF", file=str(pdf_path), error=str(e))
+            raise DocumentPortalException("Error reading PDF", e) from e
+    def combine_documents(self) -> str:
+        try:
+            doc_parts = []
+            for file in sorted(self.session_path.iterdir()):
+                if file.is_file() and file.suffix.lower() == ".pdf":
+                    content = self.read_pdf(file)
+                    doc_parts.append(f"Document: {file.name}\n{content}")
+            combined_text = "\n\n".join(doc_parts)
+            self.log.info("Documents combined", count=len(doc_parts), session=self.session_id)
+            return combined_text
+        except Exception as e:
+            self.log.error("Error combining documents", error=str(e), session=self.session_id)
+            raise DocumentPortalException("Error combining documents", e) from e
+
+    def clean_old_sessions(self, keep_latest: int = 3):
+        try:
+            sessions = sorted([f for f in self.base_dir.iterdir() if f.is_dir()], reverse=True)
+            for folder in sessions[keep_latest:]:
+                shutil.rmtree(folder, ignore_errors=True)
+                self.log.info("Old session folder deleted", path=str(folder))
+        except Exception as e:
+            self.log.error("Error cleaning old sessions", error=str(e))
+            raise DocumentPortalException("Error cleaning old sessions", e) from e
 
