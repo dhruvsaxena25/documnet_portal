@@ -22,6 +22,12 @@ from src.document_chat.retrieval import ConversationalRAG
 #     StaticFiles(directory=BASE_DIR / "static"),
 #     name="static"
 # )
+
+FAISS_BASE = os.getenv("FAISS_BASE", "faiss_index")
+UPLOAD_BASE = os.getenv("UPLOAD_BASE", "data")
+FAISS_INDEX_NAME = os.getenv("FAISS_INDEX_NAME", "index")  # <--- keep consistent with save_local()
+
+
 app = FastAPI(title="Document Portal API", version="0.1")
 
 app.add_middleware(
