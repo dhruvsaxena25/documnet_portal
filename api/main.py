@@ -11,9 +11,12 @@ from src.document_ingestion.data_ingestion import (
     ChatIngestor,
     FaissManager
 )
+from pathlib import Path
 from src.document_analyzer.data_analysis import DocumentAnalyzer
 from src.document_compare.document_comparator import DocumentComparatorLLM
 from src.document_chat.retrieval import ConversationalRAG
+# from utils.document_ops import FastAPIFileAdapter,read_pdf_via_handler
+# from logger import GLOBAL_LOGGER as log
 
 # BASE_DIR = Path(__file__).resolve().parent.parent  # project root
 
@@ -29,6 +32,9 @@ FAISS_INDEX_NAME = os.getenv("FAISS_INDEX_NAME", "index")  # <--- keep consisten
 
 
 app = FastAPI(title="Document Portal API", version="0.1")
+# BASE_DIR = Path(__file__).resolve().parent.parent
+# app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+# templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 app.add_middleware(
     CORSMiddleware,
