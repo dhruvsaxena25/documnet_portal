@@ -7,7 +7,7 @@ import os
 from typing import List, Optional, Any, Dict
 from src.document_ingestion.data_ingestion import (
     DocHandler,
-    DocumentComaprator,
+    DocumentComparator, 
     ChatIngestor,
     FaissManager
 )
@@ -15,8 +15,8 @@ from pathlib import Path
 from src.document_analyzer.data_analysis import DocumentAnalyzer
 from src.document_compare.document_comparator import DocumentComparatorLLM
 from src.document_chat.retrieval import ConversationalRAG
-# from utils.document_ops import FastAPIFileAdapter,read_pdf_via_handler
-# from logger import GLOBAL_LOGGER as log
+from utils.document_ops import FastAPIFileAdapter,read_pdf_via_handler
+from logger import GLOBAL_LOGGER as log
 
 # BASE_DIR = Path(__file__).resolve().parent.parent  # project root
 
