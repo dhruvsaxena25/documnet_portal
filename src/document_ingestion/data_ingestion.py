@@ -12,7 +12,7 @@ from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from utils.model_loader import ModelLoader
-from logger import GLOBAL_LOGGER as log 
+from logger import GLOBAL_LOGGER as log
 from exception.custom_exception import DocumentPortalException
 from utils.file_io import generate_session_id, save_uploaded_files
 from utils.document_ops import load_documents, concat_for_analysis, concat_for_comparison
@@ -21,9 +21,6 @@ SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}
 
 # FAISS Manager (load-or-create)
 class FaissManager:
-    """
-    FAISS Manager for loading or creating a FAISS index.
-    """
     def __init__(self, index_dir: Path, model_loader: Optional[ModelLoader] = None):
         self.index_dir = Path(index_dir)
         self.index_dir.mkdir(parents=True, exist_ok=True)
@@ -43,48 +40,21 @@ class FaissManager:
         self.vs: Optional[FAISS] = None
         
     def _exists(self)-> bool:
-        """Check if the FAISS index files exist."""
-        
         return (self.index_dir / "index.faiss").exists() and (self.index_dir / "index.pkl").exists()
     
     @staticmethod
     def _fingerprint(text: str, md: Dict[str, Any]) -> str:
-        """Generate a unique fingerprint for a document.
-
-        Args:
-            text (str): The content of the document.
-            md (Dict[str, Any]): Metadata associated with the document.
-
-        Returns:
-            str: A unique fingerprint for the document.
-        """
         src = md.get("source") or md.get("file_path")
         rid = md.get("row_id")
         if src is not None:
             return f"{src}::{'' if rid is None else rid}"
         return hashlib.sha256(text.encode("utf-8")).hexdigest()
     
-    
     def _save_meta(self):
-        """Save metadata to the meta_path."""
-        
         self.meta_path.write_text(json.dumps(self._meta, ensure_ascii=False, indent=2), encoding="utf-8")
         
         
     def add_documents(self,docs: List[Document]):
-        """
-        Add documents to the FAISS index idempotently.
-
-        Args:
-            docs (List[Document]): The documents to add.
-
-        Raises:
-            RuntimeError: If FAISS index is not initialized.
-
-        Returns:
-            int: The number of documents added.
-            int: The number of documents added.
-        """
         
         if self.vs is None:
             raise RuntimeError("Call load_or_create() before add_documents_idempotent().")
@@ -106,7 +76,6 @@ class FaissManager:
         return len(new_docs)
     
     def load_or_create(self,texts:Optional[List[str]]=None, metadatas: Optional[List[dict]] = None):
-        """Load existing FAISS index or create a new one from provided texts and metadatas."""
         ## if we running first time then it will not go in this block
         if self._exists():
             self.vs = FAISS.load_local(
@@ -125,7 +94,6 @@ class FaissManager:
         
         
 class ChatIngestor:
-    """Ingests chat documents for processing."""
     def __init__( self,
         temp_base: str = "data",
         faiss_base: str = "faiss_index",
@@ -135,7 +103,7 @@ class ChatIngestor:
         try:
             self.model_loader = ModelLoader()
             
-            self.use_session =  
+            self.use_session = use_session_dirs
             self.session_id = session_id or generate_session_id()
             
             self.temp_base = Path(temp_base); self.temp_base.mkdir(parents=True, exist_ok=True)
@@ -202,6 +170,7 @@ class ChatIngestor:
             raise DocumentPortalException("Failed to build retriever", e) from e
 
             
+        
             
 class DocHandler:
     """
