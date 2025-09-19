@@ -38,7 +38,6 @@ app.add_middleware(
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_ui(request: Request):
-    """Serve the main UI page."""
     log.info("Serving UI homepage.")
     resp = templates.TemplateResponse("index.html", {"request": request})
     resp.headers["Cache-Control"] = "no-store"
@@ -46,24 +45,12 @@ async def serve_ui(request: Request):
 
 @app.get("/health")
 def health() -> Dict[str, str]:
-    """Health check endpoint."""
     log.info("Health check passed.")
     return {"status": "ok", "service": "document-portal"}
 
 # ---------- ANALYZE ----------
 @app.post("/analyze")
 async def analyze_document(file: UploadFile = File(...)) -> Any:
-    """Analyze a document and extract insights.
-
-    Args:
-        file (UploadFile, optional): The document file to analyze. Defaults to File(...).
-
-    Raises:
-        HTTPException: _description_
-
-    Returns:
-        Any: _description_
-    """
     try:
         log.info(f"Received file for analysis: {file.filename}")
         dh = DocHandler()
@@ -82,18 +69,6 @@ async def analyze_document(file: UploadFile = File(...)) -> Any:
 # ---------- COMPARE ----------
 @app.post("/compare")
 async def compare_documents(reference: UploadFile = File(...), actual: UploadFile = File(...)) -> Any:
-    """Compare two documents and return a structured comparison.
-
-    Args:
-        reference (UploadFile, optional): The reference document to compare against. Defaults to File(...).
-        actual (UploadFile, optional): The actual document to compare. Defaults to File(...).
-
-    Raises:
-        HTTPException: _description_
-
-    Returns:
-        Any: _description_
-    """
     try:
         log.info(f"Comparing files: {reference.filename} vs {actual.filename}")
         dc = DocumentComparator()
@@ -122,22 +97,6 @@ async def chat_build_index(
     chunk_overlap: int = Form(200),
     k: int = Form(5),
 ) -> Any:
-    """Build an index for chat documents.   
-
-    Args:
-        files (List[UploadFile], optional): The document files to index. Defaults to File(...).
-        session_id (Optional[str], optional): The session ID for the chat. Defaults to Form(None).
-        use_session_dirs (bool, optional): Whether to use session directories. Defaults to Form(True).
-        chunk_size (int, optional): The size of each chunk. Defaults to Form(1000).
-        chunk_overlap (int, optional): The overlap between chunks. Defaults to Form(200).
-        k (int, optional): The number of chunks to retrieve. Defaults to Form(5).
-
-    Raises:
-        HTTPException: _description_
-
-    Returns:
-        Any: _description_
-    """
     try:
         log.info(f"Indexing chat session. Session ID: {session_id}, Files: {[f.filename for f in files]}")
         wrapped = [FastAPIFileAdapter(f) for f in files]
@@ -170,22 +129,6 @@ async def chat_query(
     use_session_dirs: bool = Form(True),
     k: int = Form(5),
 ) -> Any:
-    """Handle a chat query and return a response.
-
-    Args:
-        question (str, optional): The question to ask. Defaults to Form(...).
-        session_id (Optional[str], optional): The session ID for the chat. Defaults to Form(None).
-        use_session_dirs (bool, optional): Whether to use session directories. Defaults to Form(True).
-        k (int, optional): The number of chunks to retrieve. Defaults to Form(5).
-
-    Raises:
-        HTTPException: If session_id is required but not provided.
-        HTTPException: If the FAISS index directory is not found.
-        HTTPException: If an error occurs while processing the query.
-
-    Returns:
-        Any: A dictionary containing the answer, session_id, k, and engine type.
-    """
     try:
         log.info(f"Received chat query: '{question}' | session: {session_id}")
         if use_session_dirs and not session_id:
