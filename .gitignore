@@ -63,6 +63,7 @@ coverage.xml
 .pytest_cache/
 cover/
 faiss_index
+notebook 
 archive/
 .archive
 archive
